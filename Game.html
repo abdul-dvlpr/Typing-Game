@@ -1,0 +1,1570 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Battle - Space Typing Game</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Roboto+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --secondary-color: #10b981;
+            --accent-color: #f43f5e;
+            --background-dark: #030720;
+            --text-color: #f3f4f6;
+            --menu-bg: rgba(17, 24, 39, 0.9);
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+            background-color: var(--background-dark);
+            color: var(--text-color);
+        }
+        
+        #stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .menu-screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            background: radial-gradient(ellipse at center, rgba(9, 15, 42, 0.7) 0%, var(--background-dark) 100%);
+            transition: opacity 0.5s ease;
+        }
+        
+        .game-title {
+            font-size: 6rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #a5b4fc, #4f46e5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(79, 70, 229, 0.5);
+            transform: perspective(500px) rotateX(10deg);
+        }
+        
+        .menu-button {
+            background: linear-gradient(135deg, var(--primary-color), #2d3a8c);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 30px;
+            margin: 10px;
+            font-size: 1.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .menu-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        .menu-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.6);
+        }
+        
+        .menu-button:hover::after {
+            left: 100%;
+        }
+        
+        #gameUI {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        #gameStats {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        #currentWord {
+            position: absolute;
+            bottom: 150px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 2rem;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        
+        #typingIndicator {
+            position: absolute;
+            bottom: 100px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1.5rem;
+            color: #34d399;
+        }
+        
+        .typed {
+            color: #34d399;
+        }
+        
+        .untyped {
+            color: #f3f4f6;
+        }
+        
+        #playerShip {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+        
+        .ship {
+            position: absolute;
+            transition: transform 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 3;
+        }
+        
+        .ship-word {
+            font-family: 'Roboto Mono', monospace;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            white-space: nowrap;
+        }
+        
+        .settings-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 600px;
+            background-color: var(--menu-bg);
+            border-radius: 16px;
+            padding: 30px;
+            z-index: 20;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            display: none;
+        }
+        
+        .settings-title {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        .setting-row {
+            margin-bottom: 20px;
+        }
+        
+        .setting-label {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .theme-option {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-right: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .theme-option.selected {
+            transform: scale(1.2);
+            border-color: white;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        .settings-button {
+            padding: 10px 20px;
+            margin-left: 10px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 500;
+        }
+        
+        .btn-cancel {
+            background-color: #4b5563;
+            color: white;
+        }
+        
+        .btn-save {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 15;
+            display: none;
+        }
+        
+        .game-over-title {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: var(--accent-color);
+        }
+        
+        .stats-container {
+            background-color: rgba(17, 24, 39, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            width: 80%;
+            max-width: 500px;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .laser {
+            position: absolute;
+            background: linear-gradient(to top, rgba(16, 185, 129, 0), #10b981);
+            width: 2px;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .explosion {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, #f43f5e, transparent);
+            border-radius: 50%;
+            opacity: 1;
+            pointer-events: none;
+            z-index: 4;
+            animation: explode 0.5s forwards;
+        }
+        
+        @keyframes explode {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+        
+        .power-up {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #f59e0b;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 16px;
+            z-index: 3;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+            }
+            70% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+            }
+        }
+        
+        #footer {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 14px;
+            opacity: 0.7;
+            z-index: 10;
+            font-family: 'Roboto Mono', monospace;
+        }
+        
+        .difficulty-option {
+            display: flex;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+        
+        .difficulty-radio {
+            margin-right: 5px;
+        }
+        
+        .difficulty-container {
+            display: flex;
+            margin-top: 5px;
+        }
+        
+        .volume-slider {
+            width: 100%;
+            margin-top: 8px;
+        }
+        
+        .btn-help {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(5px);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-help:hover {
+            background-color: var(--primary-color);
+            transform: scale(1.1);
+        }
+        
+        .help-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 600px;
+            background-color: var(--menu-bg);
+            border-radius: 16px;
+            padding: 30px;
+            z-index: 20;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            display: none;
+        }
+        
+        .help-title {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        .help-section {
+            margin-bottom: 15px;
+        }
+        
+        .help-section h3 {
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+        }
+        
+        .close-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        .pause-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 15;
+            display: none;
+        }
+        
+        .pause-title {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        
+        #wordInput {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--background-dark);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loading-title {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #a5b4fc, #4f46e5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .progress-bar {
+            width: 300px;
+            height: 10px;
+            background-color: #1e293b;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .shield {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid #38bdf8;
+            box-shadow: 0 0 20px #38bdf8;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loadingScreen">
+        <h1 class="loading-title">TYPING BATTLE</h1>
+        <p>Loading game assets...</p>
+        <div class="progress-bar">
+            <div class="progress" id="loadingProgress"></div>
+        </div>
+    </div>
+
+    <div id="gameContainer">
+        <canvas id="stars"></canvas>
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="menuScreen" class="menu-screen">
+            <h1 class="game-title">TYPING BATTLE</h1>
+            <button id="startGameBtn" class="menu-button">START GAME</button>
+            <button id="settingsBtn" class="menu-button">SETTINGS</button>
+        </div>
+        
+        <div id="gameUI">
+            <div id="gameStats">
+                <div>Score: <span id="scoreValue">0</span></div>
+                <div>Level: <span id="levelValue">1</span></div>
+                <div>Time: <span id="timeValue">0</span></div>
+                <div>Accuracy: <span id="accuracyValue">100%</span></div>
+                <div>WPM: <span id="wpmValue">0</span></div>
+            </div>
+            
+            <div id="currentWord"></div>
+            <div id="typingIndicator"></div>
+            
+            <input type="text" id="wordInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        </div>
+        
+        <button id="helpBtn" class="btn-help"><i class="fas fa-question"></i></button>
+        
+        <div id="settingsModal" class="settings-modal">
+            <h2 class="settings-title">SETTINGS</h2>
+            <button class="close-button" id="closeSettingsBtn"><i class="fas fa-times"></i></button>
+            
+            <div class="setting-row">
+                <label class="setting-label">Theme</label>
+                <div id="themeOptions">
+                    <div class="theme-option selected" data-theme="default" style="background: linear-gradient(135deg, #4f46e5, #10b981);"></div>
+                    <div class="theme-option" data-theme="crimson" style="background: linear-gradient(135deg, #dc2626, #7e22ce);"></div>
+                    <div class="theme-option" data-theme="ocean" style="background: linear-gradient(135deg, #0891b2, #2dd4bf);"></div>
+                    <div class="theme-option" data-theme="sunset" style="background: linear-gradient(135deg, #f97316, #ec4899);"></div>
+                </div>
+            </div>
+            
+            <div class="setting-row">
+                <label class="setting-label">Difficulty</label>
+                <div class="difficulty-container">
+                    <div class="difficulty-option">
+                        <input type="radio" id="difficultyEasy" name="difficulty" value="easy" class="difficulty-radio" checked>
+                        <label for="difficultyEasy">Easy</label>
+                    </div>
+                    <div class="difficulty-option">
+                        <input type="radio" id="difficultyMedium" name="difficulty" value="medium" class="difficulty-radio">
+                        <label for="difficultyMedium">Medium</label>
+                    </div>
+                    <div class="difficulty-option">
+                        <input type="radio" id="difficultyHard" name="difficulty" value="hard" class="difficulty-radio">
+                        <label for="difficultyHard">Hard</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="setting-row">
+                <label class="setting-label">Sound Effects Volume</label>
+                <input type="range" id="sfxVolume" min="0" max="1" step="0.1" value="0.7" class="volume-slider">
+            </div>
+            
+            <div class="setting-row">
+                <label class="setting-label">Music Volume</label>
+                <input type="range" id="musicVolume" min="0" max="1" step="0.1" value="0.5" class="volume-slider">
+            </div>
+            
+            <div class="modal-buttons">
+                <button id="cancelSettingsBtn" class="settings-button btn-cancel">Cancel</button>
+                <button id="saveSettingsBtn" class="settings-button btn-save">Save</button>
+            </div>
+        </div>
+        
+        <div id="helpModal" class="help-modal">
+            <h2 class="help-title">HOW TO PLAY</h2>
+            <button class="close-button" id="closeHelpBtn"><i class="fas fa-times"></i></button>
+            
+            <div class="help-section">
+                <h3>Gameplay</h3>
+                <p>Enemy ships will appear from the top of the screen with words attached to them. Type the words correctly to destroy the ships before they reach your position.</p>
+            </div>
+            
+            <div class="help-section">
+                <h3>Controls</h3>
+                <p>- Type the words displayed on enemy ships<br>
+                - Press ESC to pause the game<br>
+                - When multiple ships are present, the game will automatically target the one closest to your ship</p>
+            </div>
+            
+            <div class="help-section">
+                <h3>Power-ups</h3>
+                <p>- Shield (S): Temporary protection from enemy ships<br>
+                - Time Slow (T): Slows down all enemy ships<br>
+                - Multi-shot (M): Destroy multiple ships with a single word</p>
+            </div>
+            
+            <button id="closeHelpModalBtn" class="settings-button btn-save">Got it!</button>
+        </div>
+        
+        <div id="gameOverScreen" class="game-over">
+            <h2 class="game-over-title">GAME OVER</h2>
+            
+            <div class="stats-container">
+                <div class="stat-row">
+                    <div>Final Score:</div>
+                    <div id="finalScore">0</div>
+                </div>
+                <div class="stat-row">
+                    <div>Words Typed:</div>
+                    <div id="wordsTyped">0</div>
+                </div>
+                <div class="stat-row">
+                    <div>Accuracy:</div>
+                    <div id="finalAccuracy">0%</div>
+                </div>
+                <div class="stat-row">
+                    <div>WPM:</div>
+                    <div id="finalWPM">0</div>
+                </div>
+                <div class="stat-row">
+                    <div>Time Survived:</div>
+                    <div id="timeSurvived">0s</div>
+                </div>
+            </div>
+            
+            <button id="restartBtn" class="menu-button">PLAY AGAIN</button>
+            <button id="menuBtn" class="menu-button">MAIN MENU</button>
+        </div>
+        
+        <div id="pauseOverlay" class="pause-overlay">
+            <h2 class="pause-title">PAUSED</h2>
+            <button id="resumeBtn" class="menu-button">RESUME</button>
+            <button id="exitBtn" class="menu-button">EXIT TO MENU</button>
+        </div>
+    </div>
+    
+    <div id="footer">made by Abdul Dvlpr</div>
+    
+    <script>
+        // Game constants and variables
+        const GAME_WIDTH = window.innerWidth;
+        const GAME_HEIGHT = window.innerHeight;
+        const shipSprites = [
+            '🚀', '🛸', '🛰️', '🚁', '✈️', '🛩️'
+        ];
+        
+        // Word lists based on difficulty
+        const wordLists = {
+            easy: [
+                'the', 'and', 'that', 'have', 'for', 'not', 'with', 'you', 'this', 'but',
+                'his', 'they', 'say', 'one', 'all', 'would', 'can', 'who', 'make', 'when',
+                'time', 'more', 'if', 'no', 'just', 'him', 'know', 'take', 'into', 'year',
+                'your', 'good', 'some', 'could', 'them', 'see', 'other', 'than', 'then', 'now',
+                'look', 'only', 'come', 'its', 'over', 'think', 'also', 'back', 'after', 'use'
+            ],
+            medium: [
+                'people', 'world', 'school', 'state', 'family', 'student', 'group',
+                'country', 'problem', 'company', 'system', 'program', 'question', 'number',
+                'night', 'point', 'leave', 'little', 'great', 'become', 'public', 'because',
+                'provide', 'however', 'national', 'around', 'consider', 'continue', 'together',
+                'develop', 'between', 'computer', 'science', 'without', 'important', 'through'
+            ],
+            hard: [
+                'government', 'information', 'experience', 'development', 'environment',
+                'understand', 'management', 'international', 'organization', 'particularly',
+                'responsibility', 'opportunity', 'technology', 'community', 'university',
+                'available', 'successful', 'discussion', 'especially', 'interesting',
+                'significant', 'relationship', 'administration', 'professional', 'immediately',
+                'independent', 'refrigerator', 'representation', 'sophisticated', 'communication'
+            ]
+        };
+        
+        // Game state
+        let gameState = {
+            isRunning: false,
+            isPaused: false,
+            score: 0,
+            level: 1,
+            time: 0,
+            correctChars: 0,
+            incorrectChars: 0,
+            totalWordCount: 0,
+            startTime: 0,
+            currentWordIndex: -1,
+            ships: [],
+            activeShip: null,
+            typedWord: '',
+            settings: {
+                theme: 'default',
+                difficulty: 'easy',
+                sfxVolume: 0.7,
+                musicVolume: 0.5
+            },
+            powerUps: [],
+            shieldActive: false,
+            slowMotionActive: false,
+            multiShotActive: false,
+            keyStrokes: 0
+        };
+        
+        // DOM Elements
+        const menuScreen = document.getElementById('menuScreen');
+        const gameCanvas = document.getElementById('gameCanvas');
+        const ctx = gameCanvas.getContext('2d');
+        const starsCanvas = document.getElementById('stars');
+        const starsCtx = starsCanvas.getContext('2d');
+        const scoreValue = document.getElementById('scoreValue');
+        const levelValue = document.getElementById('levelValue');
+        const timeValue = document.getElementById('timeValue');
+        const accuracyValue = document.getElementById('accuracyValue');
+        const wpmValue = document.getElementById('wpmValue');
+        const currentWordElement = document.getElementById('currentWord');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const wordInput = document.getElementById('wordInput');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScore = document.getElementById('finalScore');
+        const wordsTyped = document.getElementById('wordsTyped');
+        const finalAccuracy = document.getElementById('finalAccuracy');
+        const finalWPM = document.getElementById('finalWPM');
+        const timeSurvived = document.getElementById('timeSurvived');
+        const settingsModal = document.getElementById('settingsModal');
+        const helpModal = document.getElementById('helpModal');
+        const pauseOverlay = document.getElementById('pauseOverlay');
+        const loadingScreen = document.getElementById('loadingScreen');
+        const loadingProgress = document.getElementById('loadingProgress');
+        
+        // Theme colors
+        const themes = {
+            default: {
+                primaryColor: '#4f46e5',
+                secondaryColor: '#10b981',
+                accentColor: '#f43f5e',
+                backgroundColor: '#030720'
+            },
+            crimson: {
+                primaryColor: '#dc2626',
+                secondaryColor: '#7e22ce',
+                accentColor: '#eab308',
+                backgroundColor: '#18181b'
+            },
+            ocean: {
+                primaryColor: '#0891b2',
+                secondaryColor: '#2dd4bf',
+                accentColor: '#f97316',
+                backgroundColor: '#0c4a6e'
+            },
+            sunset: {
+                primaryColor: '#f97316',
+                secondaryColor: '#ec4899',
+                accentColor: '#6366f1',
+                backgroundColor: '#1e1b4b'
+            }
+        };
+        
+        // Audio effects
+        const audioElements = {
+            shoot: new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAeAAA9VAAYGBgYJSUlJSUxMTExPj4+Pj5KSkpKV1dXV1dkZGRkcHBwcHB9fX19fYmJiYmVlZWVlZWhoaGhra2tra25ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5//sQxAADwAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU='),
+            explosion: new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAfAAA/cQAQEBAQEBkZGRkZMzMzMzNMTExMTGZmZmZmgICAgICZmZmZmbOzs7OzzMzMzMzm5ubm5v/////MzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM//sQxAADwAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU='),
+            powerUp: new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAAnzgAXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxcXFxc='),
+            gameOver: new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAIAAANowAXFxcXFxclJSUlJSUpKSkpKSk1NTU1NTU1NTU1NTV1dXV1dXV1dXV1dXXFxcXFxcXFxcXFxfX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19Q==')
+        };
+        
+        let backgroundMusic = new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAIAAAPwgAgICAgIDo6Ojo6Ojw8PDw8PFVVVVVVVWdnZ2dnZ4SEhISEhJaWlpaWlrGxsbGxsbGxsbGxse/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v//sQxAADwAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU=');
+        backgroundMusic.loop = true;
+        
+        // Set up canvas size
+        function resizeCanvases() {
+            gameCanvas.width = window.innerWidth;
+            gameCanvas.height = window.innerHeight;
+            starsCanvas.width = window.innerWidth;
+            starsCanvas.height = window.innerHeight;
+            generateStars();
+        }
+        
+        // Generate star background
+        const stars = [];
+        function generateStars() {
+            stars.length = 0;
+            const starCount = Math.floor((starsCanvas.width * starsCanvas.height) / 2000);
+            
+            for (let i = 0; i < starCount; i++) {
+                stars.push({
+                    x: Math.random() * starsCanvas.width,
+                    y: Math.random() * starsCanvas.height,
+                    size: Math.random() * 2 + 0.5,
+                    brightness: Math.random() * 0.5 + 0.5,
+                    speed: Math.random() * 0.05 + 0.01
+                });
+            }
+        }
+        
+        // Draw stars
+        function drawStars() {
+            starsCtx.clearRect(0, 0, starsCanvas.width, starsCanvas.height);
+            starsCtx.fillStyle = '#ffffff';
+            
+            for (const star of stars) {
+                starsCtx.beginPath();
+                starsCtx.globalAlpha = star.brightness;
+                starsCtx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                starsCtx.fill();
+                
+                star.y += star.speed * (gameState.slowMotionActive ? 0.3 : 1);
+                if (star.y > starsCanvas.height) {
+                    star.y = 0;
+                    star.x = Math.random() * starsCanvas.width;
+                }
+            }
+            starsCtx.globalAlpha = 1;
+        }
+        
+        // Create a new ship
+        function createShip() {
+            const difficulty = gameState.settings.difficulty;
+            const wordList = wordLists[difficulty];
+            const randomWord = wordList[Math.floor(Math.random() * wordList.length)];
+            
+            const ship = {
+                word: randomWord,
+                x: Math.random() * (GAME_WIDTH - 100) + 50,
+                y: -50,
+                speed: (0.5 + Math.random() * 0.5 + (gameState.level * 0.1)) * (gameState.slowMotionActive ? 0.3 : 1),
+                sprite: shipSprites[Math.floor(Math.random() * shipSprites.length)],
+                element: document.createElement('div'),
+                wordElement: document.createElement('div')
+            };
+            
+            // Create ship DOM element
+            ship.element.className = 'ship';
+            ship.element.style.left = `${ship.x}px`;
+            ship.element.style.top = `${ship.y}px`;
+            
+            // Create word element
+            ship.wordElement.className = 'ship-word';
+            ship.wordElement.innerHTML = ship.word;
+            
+            // Add emoji sprite
+            const shipSpriteElement = document.createElement('div');
+            shipSpriteElement.style.fontSize = '2rem';
+            shipSpriteElement.textContent = ship.sprite;
+            
+            ship.element.appendChild(ship.wordElement);
+            ship.element.appendChild(shipSpriteElement);
+            document.getElementById('gameContainer').appendChild(ship.element);
+            
+            return ship;
+        }
+        
+        // Update ship positions
+        function updateShips() {
+            for (let i = 0; i < gameState.ships.length; i++) {
+                const ship = gameState.ships[i];
+                ship.y += ship.speed;
+                ship.element.style.top = `${ship.y}px`;
+                
+                // Check if ship reached the bottom
+                if (ship.y > GAME_HEIGHT - 100 && gameState.isRunning) {
+                    if (gameState.shieldActive) {
+                        // Ship hits shield instead of ending game
+                        createExplosion(ship.x, ship.y);
+                        destroyShip(i);
+                        gameState.shieldActive = false;
+                        document.querySelector('.shield').remove();
+                        i--;
+                        continue;
+                    } else {
+                        endGame();
+                        return;
+                    }
+                }
+            }
+            
+            // Target the closest ship
+            if (gameState.ships.length > 0 && !gameState.activeShip) {
+                let closestShipIndex = 0;
+                let closestDistance = GAME_HEIGHT;
+                
+                for (let i = 0; i < gameState.ships.length; i++) {
+                    const distance = GAME_HEIGHT - gameState.ships[i].y;
+                    if (distance < closestDistance) {
+                        closestDistance = distance;
+                        closestShipIndex = i;
+                    }
+                }
+                
+                gameState.activeShip = gameState.ships[closestShipIndex];
+                gameState.currentWordIndex = closestShipIndex;
+                updateTargetedWord();
+            }
+        }
+        
+        // Update the currently targeted word display
+        function updateTargetedWord() {
+            if (gameState.activeShip) {
+                const word = gameState.activeShip.word;
+                const typed = gameState.typedWord;
+                
+                let html = '';
+                for (let i = 0; i < word.length; i++) {
+                    if (i < typed.length) {
+                        if (typed[i] === word[i]) {
+                            html += `<span class="typed">${word[i]}</span>`;
+                        } else {
+                            html += `<span class="untyped" style="color: var(--accent-color);">${word[i]}</span>`;
+                        }
+                    } else {
+                        html += `<span class="untyped">${word[i]}</span>`;
+                    }
+                }
+                
+                currentWordElement.innerHTML = html;
+                typingIndicator.textContent = typed;
+            } else {
+                currentWordElement.innerHTML = '';
+                typingIndicator.textContent = '';
+            }
+        }
+        
+        // Create a laser effect
+        function createLaser(startX, startY, endX, endY) {
+            const laser = document.createElement('div');
+            laser.className = 'laser';
+            
+            // Calculate angle for the laser
+            const angle = Math.atan2(endY - startY, endX - startX);
+            const length = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+            
+            laser.style.left = `${startX}px`;
+            laser.style.top = `${startY}px`;
+            laser.style.width = `${length}px`;
+            laser.style.height = '2px';
+            laser.style.transform = `rotate(${angle}rad)`;
+            laser.style.transformOrigin = '0 0';
+            
+            document.getElementById('gameContainer').appendChild(laser);
+            
+            // Remove the laser after animation
+            setTimeout(() => {
+                laser.remove();
+            }, 200);
+            
+            // Play laser sound
+            const shootSound = audioElements.shoot.cloneNode();
+            shootSound.volume = gameState.settings.sfxVolume;
+            shootSound.play();
+        }
+        
+        // Create explosion effect
+        function createExplosion(x, y) {
+            const explosion = document.createElement('div');
+            explosion.className = 'explosion';
+            explosion.style.left = `${x - 30}px`;
+            explosion.style.top = `${y - 30}px`;
+            
+            document.getElementById('gameContainer').appendChild(explosion);
+            
+            // Remove explosion after animation
+            setTimeout(() => {
+                explosion.remove();
+            }, 500);
+            
+            // Play explosion sound
+            const explosionSound = audioElements.explosion.cloneNode();
+            explosionSound.volume = gameState.settings.sfxVolume;
+            explosionSound.play();
+        }
+        
+        // Destroy a ship
+        function destroyShip(index) {
+            const ship = gameState.ships[index];
+            const isActiveShip = ship === gameState.activeShip;
+            
+            createExplosion(ship.x, ship.y);
+            
+            // Remove the ship from the DOM and array
+            ship.element.remove();
+            gameState.ships.splice(index, 1);
+            
+            if (isActiveShip) {
+                gameState.activeShip = null;
+                gameState.currentWordIndex = -1;
+                gameState.typedWord = '';
+                
+                // Find the next ship to target
+                if (gameState.ships.length > 0) {
+                    let closestShipIndex = 0;
+                    let closestDistance = GAME_HEIGHT;
+                    
+                    for (let i = 0; i < gameState.ships.length; i++) {
+                        const distance = GAME_HEIGHT - gameState.ships[i].y;
+                        if (distance < closestDistance) {
+                            closestDistance = distance;
+                            closestShipIndex = i;
+                        }
+                    }
+                    
+                    gameState.activeShip = gameState.ships[closestShipIndex];
+                    gameState.currentWordIndex = closestShipIndex;
+                }
+                
+                updateTargetedWord();
+            }
+            
+            // Update score
+            gameState.score += ship.word.length * 10;
+            scoreValue.textContent = gameState.score;
+            gameState.totalWordCount++;
+            
+            // Level progression
+            if (gameState.totalWordCount % 10 === 0) {
+                gameState.level++;
+                levelValue.textContent = gameState.level;
+                
+                // Random chance to spawn a power-up
+                if (Math.random() < 0.3) {
+                    spawnPowerUp();
+                }
+            }
+        }
+        
+        // Spawn a power-up
+        function spawnPowerUp() {
+            const powerUpTypes = ['S', 'T', 'M'];  // Shield, Time Slow, Multi-shot
+            const type = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
+            
+            const powerUp = {
+                type: type,
+                x: Math.random() * (GAME_WIDTH - 100) + 50,
+                y: -30,
+                speed: 1,
+                element: document.createElement('div')
+            };
+            
+            // Create power-up DOM element
+            powerUp.element.className = 'power-up';
+            powerUp.element.style.left = `${powerUp.x}px`;
+            powerUp.element.style.top = `${powerUp.y}px`;
+            powerUp.element.textContent = type;
+            
+            document.getElementById('gameContainer').appendChild(powerUp.element);
+            gameState.powerUps.push(powerUp);
+            
+            return powerUp;
+        }
+        
+        // Update power-ups
+        function updatePowerUps() {
+            for (let i = 0; i < gameState.powerUps.length; i++) {
+                const powerUp = gameState.powerUps[i];
+                powerUp.y += powerUp.speed;
+                powerUp.element.style.top = `${powerUp.y}px`;
+                
+                // Check if power-up reached the bottom
+                if (powerUp.y > GAME_HEIGHT) {
+                    powerUp.element.remove();
+                    gameState.powerUps.splice(i, 1);
+                    i--;
+                    continue;
+                }
+                
+                // Check collision with player ship
+                if (powerUp.y > GAME_HEIGHT - 100 && 
+                    powerUp.x > GAME_WIDTH/2 - 50 && 
+                    powerUp.x < GAME_WIDTH/2 + 50) {
+                    
+                    activatePowerUp(powerUp.type);
+                    powerUp.element.remove();
+                    gameState.powerUps.splice(i, 1);
+                    i--;
+                    
+                    // Play power-up sound
+                    const powerUpSound = audioElements.powerUp.cloneNode();
+                    powerUpSound.volume = gameState.settings.sfxVolume;
+                    powerUpSound.play();
+                }
+            }
+        }
+        
+        // Activate power-up effects
+        function activatePowerUp(type) {
+            switch(type) {
+                case 'S': // Shield
+                    if (gameState.shieldActive) return;
+                    
+                    gameState.shieldActive = true;
+                    const shield = document.createElement('div');
+                    shield.className = 'shield';
+                    shield.style.width = '120px';
+                    shield.style.height = '120px';
+                    shield.style.bottom = '60px';
+                    shield.style.left = `${GAME_WIDTH/2 - 60}px`;
+                    document.getElementById('gameContainer').appendChild(shield);
+                    
+                    // Animate shield
+                    shield.style.opacity = 0.7;
+                    
+                    // Shield expires after 10 seconds
+                    setTimeout(() => {
+                        if (gameState.shieldActive) {
+                            gameState.shieldActive = false;
+                            shield.style.opacity = 0;
+                            setTimeout(() => shield.remove(), 500);
+                        }
+                    }, 10000);
+                    break;
+                    
+                case 'T': // Time Slow
+                    gameState.slowMotionActive = true;
+                    
+                    // Update all ship speeds
+                    for (const ship of gameState.ships) {
+                        ship.speed *= 0.3;
+                    }
+                    
+                    // Slow motion expires after 8 seconds
+                    setTimeout(() => {
+                        gameState.slowMotionActive = false;
+                        // Restore ship speeds
+                        for (const ship of gameState.ships) {
+                            ship.speed /= 0.3;
+                        }
+                    }, 8000);
+                    break;
+                    
+                case 'M': // Multi-shot
+                    gameState.multiShotActive = true;
+                    
+                    // Visual indicator
+                    const playerShip = document.getElementById('gameContainer');
+                    playerShip.style.filter = 'drop-shadow(0 0 10px var(--secondary-color))';
+                    
+                    // Multi-shot expires after one word
+                    // Will be deactivated when a word is completed
+                    break;
+            }
+        }
+        
+        // Process keyboard input
+        function handleKeydown(event) {
+            if (!gameState.isRunning || gameState.isPaused) return;
+            
+            // Escape key pauses the game
+            if (event.key === 'Escape') {
+                pauseGame();
+                return;
+            }
+            
+            if (gameState.activeShip) {
+                const word = gameState.activeShip.word;
+                
+                if (/^[a-zA-Z]$/.test(event.key)) {
+                    // Track keystrokes for WPM calculation
+                    gameState.keyStrokes++;
+                    
+                    // Add character to typed word
+                    const nextChar = word[gameState.typedWord.length];
+                    if (event.key.toLowerCase() === nextChar.toLowerCase()) {
+                        gameState.correctChars++;
+                        gameState.typedWord += nextChar;
+                        
+                        // Create laser effect for each correct character
+                        const shipRect = gameState.activeShip.element.getBoundingClientRect();
+                        createLaser(
+                            GAME_WIDTH / 2, 
+                            GAME_HEIGHT - 80,
+                            shipRect.left + shipRect.width / 2,
+                            shipRect.top + shipRect.height / 2
+                        );
+                        
+                        // Word completed
+                        if (gameState.typedWord.length === word.length) {
+                            if (gameState.multiShotActive) {
+                                // Destroy all ships if multi-shot is active
+                                const playerShip = document.getElementById('gameContainer');
+                                playerShip.style.filter = '';
+                                
+                                for (let i = gameState.ships.length - 1; i >= 0; i--) {
+                                    const shipRect = gameState.ships[i].element.getBoundingClientRect();
+                                    createLaser(
+                                        GAME_WIDTH / 2, 
+                                        GAME_HEIGHT - 80,
+                                        shipRect.left + shipRect.width / 2,
+                                        shipRect.top + shipRect.height / 2
+                                    );
+                                    destroyShip(i);
+                                }
+                                
+                                gameState.multiShotActive = false;
+                            } else {
+                                // Destroy just the targeted ship
+                                destroyShip(gameState.currentWordIndex);
+                            }
+                        }
+                    } else {
+                        gameState.incorrectChars++;
+                    }
+                    
+                    // Update UI
+                    updateTargetedWord();
+                    updateAccuracy();
+                    updateWPM();
+                }
+            }
+        }
+        
+        // Update accuracy display
+        function updateAccuracy() {
+            const total = gameState.correctChars + gameState.incorrectChars;
+            const accuracy = total > 0 ? Math.round((gameState.correctChars / total) * 100) : 100;
+            accuracyValue.textContent = `${accuracy}%`;
+        }
+        
+        // Update WPM display
+        function updateWPM() {
+            const minutes = (Date.now() - gameState.startTime) / 60000;
+            const wpm = minutes > 0 ? Math.round(gameState.keyStrokes / 5 / minutes) : 0;
+            wpmValue.textContent = wpm;
+        }
+        
+        // Start game
+        function startGame() {
+            // Reset game state
+            gameState.isRunning = true;
+            gameState.isPaused = false;
+            gameState.score = 0;
+            gameState.level = 1;
+            gameState.time = 0;
+            gameState.correctChars = 0;
+            gameState.incorrectChars = 0;
+            gameState.totalWordCount = 0;
+            gameState.keyStrokes = 0;
+            gameState.startTime = Date.now();
+            gameState.currentWordIndex = -1;
+            gameState.ships = [];
+            gameState.activeShip = null;
+            gameState.typedWord = '';
+            gameState.powerUps = [];
+            gameState.shieldActive = false;
+            gameState.slowMotionActive = false;
+            gameState.multiShotActive = false;
+            
+            // Clear any existing ships and power-ups
+            const existingShips = document.querySelectorAll('.ship');
+            existingShips.forEach(ship => ship.remove());
+            
+            const existingPowerUps = document.querySelectorAll('.power-up');
+            existingPowerUps.forEach(powerUp => powerUp.remove());
+            
+            const existingShields = document.querySelectorAll('.shield');
+            existingShields.forEach(shield => shield.remove());
+            
+            // Reset UI
+            scoreValue.textContent = '0';
+            levelValue.textContent = '1';
+            timeValue.textContent = '0';
+            accuracyValue.textContent = '100%';
+            wpmValue.textContent = '0';
+            currentWordElement.innerHTML = '';
+            typingIndicator.textContent = '';
+            
+            // Hide menus
+            menuScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            pauseOverlay.style.display = 'none';
+            
+            // Focus on input field
+            wordInput.focus();
+            
+            // Play background music
+            backgroundMusic.volume = gameState.settings.musicVolume;
+            backgroundMusic.play();
+            
+            // Start game loop
+            requestAnimationFrame(gameLoop);
+            
+            // Start spawning ships
+            spawnShips();
+        }
+        
+        // Spawn ships at intervals
+        function spawnShips() {
+            if (!gameState.isRunning || gameState.isPaused) return;
+            
+            const ship = createShip();
+            gameState.ships.push(ship);
+            
+            // If this is the first ship, make it the active target
+            if (gameState.ships.length === 1) {
+                gameState.activeShip = ship;
+                gameState.currentWordIndex = 0;
+                updateTargetedWord();
+            }
+            
+            // Schedule next ship spawn based on level and difficulty
+            const baseDelay = 3000;
+            let delay;
+            
+            switch(gameState.settings.difficulty) {
+                case 'easy':
+                    delay = baseDelay - (gameState.level * 100);
+                    break;
+                case 'medium':
+                    delay = baseDelay - (gameState.level * 150);
+                    break;
+                case 'hard':
+                    delay = baseDelay - (gameState.level * 200);
+                    break;
+                default:
+                    delay = baseDelay - (gameState.level * 100);
+            }
+            
+            // Ensure minimum delay
+            delay = Math.max(delay, 800);
+            
+            setTimeout(spawnShips, delay);
+        }
+        
+        // Game loop
+        function gameLoop(timestamp) {
+            if (!gameState.isRunning) return;
+            
+            if (gameState.isPaused) {
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+            
+            // Update time
+            const currentTime = Math.floor((Date.now() - gameState.startTime) / 1000);
+            if (currentTime !== gameState.time) {
+                gameState.time = currentTime;
+                timeValue.textContent = formatTime(gameState.time);
+            }
+            
+            // Draw stars
+            drawStars();
+            
+            // Update ships
+            updateShips();
+            
+            // Update power-ups
+            updatePowerUps();
+            
+            // Continue loop
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Format time as MM:SS
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+        
+        // Pause game
+        function pauseGame() {
+            gameState.isPaused = true;
+            pauseOverlay.style.display = 'flex';
+            backgroundMusic.pause();
+        }
+        
+        // Resume game
+        function resumeGame() {
+            gameState.isPaused = false;
+            pauseOverlay.style.display = 'none';
+            backgroundMusic.play();
+        }
+        
+        // End game
+        function endGame() {
+            gameState.isRunning = false;
+            
+            // Show game over screen
+            gameOverScreen.style.display = 'flex';
+            
+            // Update final stats
+            finalScore.textContent = gameState.score;
+            wordsTyped.textContent = gameState.totalWordCount;
+            
+            const total = gameState.correctChars + gameState.incorrectChars;
+            const accuracy = total > 0 ? Math.round((gameState.correctChars / total) * 100) : 100;
+            finalAccuracy.textContent = `${accuracy}%`;
+            
+            const minutes = gameState.time / 60;
+            const wpm = minutes > 0 ? Math.round(gameState.keyStrokes / 5 / minutes) : 0;
+            finalWPM.textContent = wpm;
+            
+            timeSurvived.textContent = formatTime(gameState.time);
+            
+            // Stop music
+            backgroundMusic.pause();
+            
+            // Play game over sound
+            const gameOverSound = audioElements.gameOver.cloneNode();
+            gameOverSound.volume = gameState.settings.sfxVolume;
+            gameOverSound.play();
+        }
+        
+        // Apply theme
+        function applyTheme(themeName) {
+            const theme = themes[themeName];
+            document.documentElement.style.setProperty('--primary-color', theme.primaryColor);
+            document.documentElement.style.setProperty('--secondary-color', theme.secondaryColor);
+            document.documentElement.style.setProperty('--accent-color', theme.accentColor);
+            document.documentElement.style.setProperty('--background-dark', theme.backgroundColor);
+        }
+        
+        // Save settings
+        function saveSettings() {
+            // Get selected theme
+            const selectedTheme = document.querySelector('.theme-option.selected').dataset.theme;
+            gameState.settings.theme = selectedTheme;
+            
+            // Get selected difficulty
+            const selectedDifficulty = document.querySelector('input[name="difficulty"]:checked').value;
+            gameState.settings.difficulty = selectedDifficulty;
+            
+            // Get volume settings
+            gameState.settings.sfxVolume = parseFloat(document.getElementById('sfxVolume').value);
+            gameState.settings.musicVolume = parseFloat(document.getElementById('musicVolume').value);
+            
+            // Apply settings
+            applyTheme(selectedTheme);
+            backgroundMusic.volume = gameState.settings.musicVolume;
+            
+            // Close settings modal
+            settingsModal.style.display = 'none';
+        }
+        
+        // Simulate loading time for the loading screen
+        function simulateLoading() {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 5;
+                loadingProgress.style.width = `${progress}%`;
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        loadingScreen.style.opacity = 0;
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                        }, 500);
+                    }, 500);
+                }
+            }, 100);
+        }
+        
+        // Event listeners
+        document.getElementById('startGameBtn').addEventListener('click', startGame);
+        document.getElementById('settingsBtn').addEventListener('click', () => {
+            settingsModal.style.display = 'block';
+        });
+        document.getElementById('helpBtn').addEventListener('click', () => {
+            helpModal.style.display = 'block';
+        });
+        document.getElementById('closeHelpBtn').addEventListener('click', () => {
+            helpModal.style.display = 'none';
+        });
+        document.getElementById('closeHelpModalBtn').addEventListener('click', () => {
+            helpModal.style.display = 'none';
+        });
+        document.getElementById('resumeBtn').addEventListener('click', resumeGame);
+        document.getElementById('exitBtn').addEventListener('click', () => {
+            gameState.isRunning = false;
+            pauseOverlay.style.display = 'none';
+            menuScreen.style.display = 'flex';
+            backgroundMusic.pause();
+        });
+        document.getElementById('restartBtn').addEventListener('click', startGame);
+        document.getElementById('menuBtn').addEventListener('click', () => {
+            gameOverScreen.style.display = 'none';
+            menuScreen.style.display = 'flex';
+        });
+        document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+            settingsModal.style.display = 'none';
+        });
+        document.getElementById('cancelSettingsBtn').addEventListener('click', () => {
+            settingsModal.style.display = 'none';
+        });
+        document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+        
+        // Theme selection
+        const themeOptions = document.querySelectorAll('.theme-option');
+        themeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                themeOptions.forEach(opt => opt.classList.remove('selected'));
+                option.classList.add('selected');
+            });
+        });
+        
+        // Handle keyboard inputs
+        document.addEventListener('keydown', handleKeydown);
+        
+        // Always focus on the hidden input field to capture keyboard events
+        document.addEventListener('click', () => {
+            if (gameState.isRunning && !gameState.isPaused) {
+                wordInput.focus();
+            }
+        });
+        
+        // Resize event
+        window.addEventListener('resize', resizeCanvases);
+        
+        // Initialize game
+        resizeCanvases();
+        applyTheme(gameState.settings.theme);
+        simulateLoading();
+        
+        // Auto-focus on the game
+        wordInput.focus();
+    </script>
+</body>
+</html>
+
